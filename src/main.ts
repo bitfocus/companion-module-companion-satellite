@@ -7,6 +7,15 @@ import { UpdateFeedbacks } from './feedbacks.js'
 import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
 
+// Validate config and update derived values
+function validateConfig(config: ModuleConfig): ModuleConfig {
+	return {
+		...config,
+		rows: typeof config.rows === 'number' ? config.rows : 4,
+		columns: typeof config.columns === 'number' ? config.columns : 8,
+	}
+}
+
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	client?: CompanionSatelliteClient
@@ -18,15 +27,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
-		this.config = config
-		this.updateStatus(InstanceStatus.Disconnected, 'Connecting...')
+		this.updateStatus(InstanceStatus.Connecting)
 
-		this.initClient()
-
-		this.updateActions() // export actions
-		this.updateFeedbacks() // export feedbacks
-		this.updateVariableDefinitions() // export variable definitions
-		this.updatePresets() // export presets
+		await this.configUpdated(config)
 	}
 
 	async destroy(): Promise<void> {
@@ -38,13 +41,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
-		const hadConfig = this.config !== undefined
-		this.config = config
+		this.config = validateConfig(config)
 
-		if (hadConfig) {
-			await this.destroy()
-			await this.init(config)
-		}
+		this.initClient()
+
+		this.updateActions() // export actions
+		this.updateFeedbacks() // export feedbacks
+		this.updateVariableDefinitions() // export variable definitions
+		this.updatePresets() // export presets
 	}
 
 	// Return config fields for web config
@@ -94,7 +98,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		})
 
 		this.client.on('connected', () => {
-			this.updateStatus(InstanceStatus.Ok, 'Connected')
+			this.updateStatus(InstanceStatus.Ok)
 			this.updateVariables()
 
 			// Register our device when connected
@@ -102,11 +106,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		})
 
 		this.client.on('connecting', () => {
-			this.updateStatus(InstanceStatus.Connecting, 'Connecting...')
+			this.updateStatus(InstanceStatus.Connecting)
 		})
 
 		this.client.on('disconnected', () => {
-			this.updateStatus(InstanceStatus.Disconnected, 'Disconnected')
+			this.updateStatus(InstanceStatus.Disconnected)
 			this.updateVariables()
 		})
 
@@ -122,6 +126,10 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.client.on('clearDeck', () => {
 			this.buttonImages = {}
 			this.checkFeedbacks('buttonImage')
+		})
+
+		this.client.on('lockedState', () => {
+			// TODO - handle this
 		})
 
 		// Connect to the remote Companion instance
@@ -140,17 +148,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	registerSatelliteDevice(): void {
 		if (!this.client) return
 
-		// Use the configured row and column count, or default to 8x4
-		const columnCount = typeof this.config.columns === 'number' ? this.config.columns : 8
-		const rowCount = typeof this.config.rows === 'number' ? this.config.rows : 4
-
 		this.client.addDevice(this.deviceId, 'Companion Satellite', {
-			columnCount: columnCount,
-			rowCount: rowCount,
-			bitmapSize: 72,
-			colours: true,
-			text: true,
-			brightness: true,
+			columnCount: this.config.columns,
+			rowCount: this.config.rows,
+			bitmapSize: 72 * 4, // TODO - customisable?
+			colours: false,
+			text: false,
+			brightness: false,
+			pincodeMap: { type: 'custom' },
 		})
 	}
 	// Update module variables based on connection state

@@ -30,6 +30,8 @@
 	"devDependencies": {
 		"@companion-module/tools": "^2.3.0",
 		"@types/node": "^22.15.18",
+		"@types/semver": "^7.7.0",
+		"@types/ws": "^8.18.1",
 		"eslint": "^9.27.0",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.0.0",

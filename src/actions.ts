@@ -1,12 +1,8 @@
 import type { ModuleInstance } from './main.js'
-import { ComposeActionDefinitions } from '@companion-module/base'
+import { CompanionActionDefinitions } from '@companion-module/base'
 
 export function UpdateActions(instance: ModuleInstance): void {
-	// Determine max rows and columns based on config
-	const maxRow = typeof instance.config.rows === 'number' ? instance.config.rows - 1 : 7
-	const maxCol = typeof instance.config.columns === 'number' ? instance.config.columns - 1 : 7
-
-	const actions: ComposeActionDefinitions = {
+	const actions: CompanionActionDefinitions = {
 		keyEvent: {
 			name: 'Button Event',
 			options: [
@@ -16,7 +12,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					label: 'Row',
 					default: 0,
 					min: 0,
-					max: maxRow,
+					max: instance.config.rows - 1,
 				},
 				{
 					id: 'column',
@@ -24,7 +20,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					label: 'Column',
 					default: 0,
 					min: 0,
-					max: maxCol,
+					max: instance.config.columns - 1,
 				},
 				{
 					id: 'eventType',
@@ -48,15 +44,9 @@ export function UpdateActions(instance: ModuleInstance): void {
 				const column = Number(event.options.column)
 				const eventType = String(event.options.eventType)
 
-				// Validate row and column are within allowed range
-				const maxRow = typeof instance.config.rows === 'number' ? instance.config.rows - 1 : 7
-				const maxCol = typeof instance.config.columns === 'number' ? instance.config.columns - 1 : 7
-
-				if (row < 0 || row > maxRow || column < 0 || column > maxCol) {
-					instance.log(
-						'warn',
-						`Invalid button coordinates: row=${row}, column=${column}. Valid range is: row=0-${maxRow}, column=0-${maxCol}`,
-					)
+				// Validate row and column are within allowed range using the instance properties
+				if (row < 0 || row >= instance.config.rows || column < 0 || column >= instance.config.columns) {
+					instance.log('warn', `Invalid button coordinates: ${row}/${column}`)
 					return
 				}
 

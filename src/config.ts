@@ -1,4 +1,5 @@
 import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
+import { DEFAULT_TCP_PORT } from './client-types.js'
 
 export interface ModuleConfig {
 	host: string
@@ -23,7 +24,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 4,
 			min: 1,
 			max: 65535,
-			default: 16622,
+			default: DEFAULT_TCP_PORT,
 		},
 		{
 			type: 'number',
@@ -31,7 +32,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Number of Columns',
 			width: 6,
 			min: 1,
-			max: 32,
+			max: 100,
 			default: 8,
 		},
 		{
@@ -40,7 +41,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Number of Rows',
 			width: 6,
 			min: 1,
-			max: 8,
+			max: 100,
 			default: 4,
 		},
 	]

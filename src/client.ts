@@ -17,6 +17,10 @@ import {
 	SomeConnectionDetails,
 } from './client-implementations.js'
 
+/**
+ * This implementation is derived from the companion-satellite project
+ */
+
 const PING_UNACKED_LIMIT = 15 // Arbitrary number
 const PING_IDLE_TIMEOUT = 1000 // Pings are allowed to be late if another packet has been received recently
 const PING_INTERVAL = 100
@@ -105,15 +109,7 @@ export type CompanionSatelliteClientEvents = {
 	deviceErrored: [{ deviceId: string; message: string }]
 }
 
-type TypedEventEmitter<T> = {
-	on<K extends keyof T>(event: K, listener: (...args: T[K]) => void): TypedEventEmitter<T>
-	once<K extends keyof T>(event: K, listener: (...args: T[K]) => void): TypedEventEmitter<T>
-	emit<K extends keyof T>(event: K, ...args: T[K]): boolean
-	removeListener<K extends keyof T>(event: K, listener: (...args: T[K]) => void): TypedEventEmitter<T>
-	removeAllListeners<K extends keyof T>(event?: K): TypedEventEmitter<T>
-}
-
-export class CompanionSatelliteClient implements CompanionClient {
+export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteClientEvents> implements CompanionClient {
 	private readonly debug: boolean
 	private socket: ICompanionSatelliteClient | undefined
 
@@ -135,42 +131,6 @@ export class CompanionSatelliteClient implements CompanionClient {
 	private _companionUnsupported = false
 
 	private _supportsLocalLockState = false
-
-	// Event emitter
-	private eventEmitter = new EventEmitter() as TypedEventEmitter<CompanionSatelliteClientEvents>
-
-	// Expose EventEmitter methods
-	public on<K extends keyof CompanionSatelliteClientEvents>(
-		event: K,
-		listener: (...args: CompanionSatelliteClientEvents[K]) => void,
-	): this {
-		this.eventEmitter.on(event, listener)
-		return this
-	}
-	public once<K extends keyof CompanionSatelliteClientEvents>(
-		event: K,
-		listener: (...args: CompanionSatelliteClientEvents[K]) => void,
-	): this {
-		this.eventEmitter.once(event, listener)
-		return this
-	}
-	public emit<K extends keyof CompanionSatelliteClientEvents>(
-		event: K,
-		...args: CompanionSatelliteClientEvents[K]
-	): boolean {
-		return this.eventEmitter.emit(event, ...args)
-	}
-	public removeListener<K extends keyof CompanionSatelliteClientEvents>(
-		event: K,
-		listener: (...args: CompanionSatelliteClientEvents[K]) => void,
-	): this {
-		this.eventEmitter.removeListener(event, listener)
-		return this
-	}
-	public removeAllListeners<K extends keyof CompanionSatelliteClientEvents>(event?: K): this {
-		this.eventEmitter.removeAllListeners(event)
-		return this
-	}
 
 	public get connectionDetails(): SomeConnectionDetails {
 		return this._connectionDetails
@@ -216,6 +176,8 @@ export class CompanionSatelliteClient implements CompanionClient {
 	}
 
 	constructor(options: CompanionSatelliteClientOptions = {}) {
+		super()
+
 		this.debug = !!options.debug
 
 		this.initSocket()

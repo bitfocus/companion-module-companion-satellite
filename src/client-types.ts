@@ -1,26 +1,36 @@
-// Types for the Companion Satellite API client
-export interface DeviceTransferVariable {
+export interface DeviceRegisterInputVariable {
 	id: string
-	type: 'input' | 'output'
+	type: 'input'
 	name: string
-	description: string
+	description?: string
+}
+export interface DeviceRegisterOutputVariable {
+	id: string
+	type: 'output'
+	name: string
+	description?: string
 }
 
 export interface DeviceRegisterProps {
-	columnCount: number
+	brightness: boolean
 	rowCount: number
-	bitmapSize?: number
-	colours?: boolean | string
-	text?: boolean
-	brightness?: boolean
-	transferVariables?: DeviceTransferVariable[]
-	pincodeMap?: boolean
+	columnCount: number
+	bitmapSize: number | null
+	colours: boolean
+	text: boolean
+	transferVariables?: Array<DeviceRegisterInputVariable | DeviceRegisterOutputVariable>
+	pincodeMap: SurfacePincodeMap | null
+}
+
+export type SurfacePincodeMap =
+	/*SurfacePincodeMapPageSingle | SurfacePincodeMapPageMultiple |*/ SurfacePincodeMapCustom
+export interface SurfacePincodeMapCustom {
+	type: 'custom'
 }
 
 export interface ClientCapabilities {
-	// For future use
+	// For future use to support new functionality
 }
-
 export interface CompanionClient {
 	capabilities: ClientCapabilities
 }
@@ -29,8 +39,8 @@ export interface SurfaceProxyDrawProps {
 	deviceId: string
 	keyIndex: number
 	image?: Buffer
+	color?: string // hex
 	text?: string
-	color?: string
 }
 
 // Utility function to ensure a value is never

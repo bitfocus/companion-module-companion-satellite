@@ -340,6 +340,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/semver@npm:^7.7.0":
+  version: 7.7.0
+  resolution: "@types/semver@npm:7.7.0"
+  checksum: 10c0/6b5f65f647474338abbd6ee91a6bbab434662ddb8fe39464edcbcfc96484d388baad9eb506dff217b6fc1727a88894930eb1f308617161ac0f376fe06be4e1ee
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:^8.18.1":
+  version: 8.18.1
+  resolution: "@types/ws@npm:8.18.1"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/61aff1129143fcc4312f083bc9e9e168aa3026b7dd6e70796276dcfb2c8211c4292603f9c4864fae702f2ed86e4abd4d38aa421831c2fd7f856c931a481afbab
+  languageName: node
+  linkType: hard
+
 "@typescript-eslint/eslint-plugin@npm:8.32.1":
   version: 8.32.1
   resolution: "@typescript-eslint/eslint-plugin@npm:8.32.1"
@@ -959,6 +975,8 @@ __metadata:
     "@companion-module/base": "npm:~1.11.3"
     "@companion-module/tools": "npm:^2.3.0"
     "@types/node": "npm:^22.15.18"
+    "@types/semver": "npm:^7.7.0"
+    "@types/ws": "npm:^8.18.1"
     eslint: "npm:^9.27.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.0.0"
