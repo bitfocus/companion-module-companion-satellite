@@ -1,3 +1,4 @@
+import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
 
@@ -44,9 +45,12 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				const key = `${row}/${column}`
 				const image = instance.buttonImages.get(key)
 
-				const yOffset = feedback.image.height < feedback.image.width ? 72 - feedback.image.height : 0
+				// Crude attempt to avoid double topbar
+				const yOffset =
+					feedback.image.height < feedback.image.width ? DEFAULT_BASE_RESOLUTION - feedback.image.height : 0
 
 				if (image) {
+					const resolution = instance.config.bitmapResolution || 1
 					return {
 						imageBuffer: image,
 						imageBufferEncoding: {
@@ -55,9 +59,9 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 						imageBufferPosition: {
 							x: 0,
 							y: -yOffset,
-							width: 72 * 4,
-							height: 72 * 4,
-							drawScale: 0.25,
+							width: DEFAULT_BASE_RESOLUTION * resolution,
+							height: DEFAULT_BASE_RESOLUTION * resolution,
+							drawScale: 1 / resolution,
 						},
 					}
 				}

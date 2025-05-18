@@ -28,6 +28,7 @@ export interface SurfacePincodeMapCustom {
 	type: 'custom'
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ClientCapabilities {
 	// For future use to support new functionality
 }
@@ -50,3 +51,5 @@ export function assertNever(value: never): never {
 
 // Default TCP port for Companion Satellite
 export const DEFAULT_TCP_PORT = 16622
+
+export const DEFAULT_BASE_RESOLUTION = 72

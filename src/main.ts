@@ -6,6 +6,7 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
+import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
 
 // Validate config and update derived values
 function validateConfig(config: ModuleConfig): ModuleConfig {
@@ -13,6 +14,7 @@ function validateConfig(config: ModuleConfig): ModuleConfig {
 		...config,
 		rows: typeof config.rows === 'number' ? config.rows : 4,
 		columns: typeof config.columns === 'number' ? config.columns : 8,
+		bitmapResolution: typeof config.bitmapResolution === 'number' ? config.bitmapResolution : 1,
 	}
 }
 
@@ -172,7 +174,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.client.addDevice(deviceId, 'Companion Satellite', {
 			columnCount: this.config.columns,
 			rowCount: this.config.rows,
-			bitmapSize: 72 * 4, // TODO - customisable?
+			bitmapSize: DEFAULT_BASE_RESOLUTION * this.config.bitmapResolution,
 			colours: false,
 			text: false,
 			brightness: false,

@@ -7,6 +7,7 @@ export interface ModuleConfig {
 	columns: number
 	rows: number
 	deviceId: string
+	bitmapResolution: number
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -52,6 +53,19 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 1,
 			max: 100,
 			default: 4,
+		},
+		{
+			type: 'dropdown',
+			id: 'bitmapResolution',
+			label: 'Bitmap Resolution',
+			width: 6,
+			tooltip: 'Higher quality requires more network bandwidth',
+			choices: [
+				{ id: 1, label: 'Low (Default)' },
+				{ id: 2, label: 'Medium' },
+				{ id: 4, label: 'High' },
+			],
+			default: 1,
 		},
 	]
 }
