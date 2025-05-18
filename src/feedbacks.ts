@@ -1,33 +1,47 @@
-import { combineRgb } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
+import { ComposeAdvancedFeedbackDefinitions } from '@companion-module/base'
 
-export function UpdateFeedbacks(self: ModuleInstance): void {
-	self.setFeedbackDefinitions({
-		ChannelState: {
-			name: 'Example Feedback',
-			type: 'boolean',
-			defaultStyle: {
-				bgcolor: combineRgb(255, 0, 0),
-				color: combineRgb(0, 0, 0),
-			},
+export function UpdateFeedbacks(instance: ModuleInstance): void {
+	const feedbacks: ComposeAdvancedFeedbackDefinitions = {
+		buttonImage: {
+			type: 'advanced',
+			name: 'Button Image',
+			description: 'Shows the image from the connected Companion button',
 			options: [
 				{
-					id: 'num',
+					id: 'row',
 					type: 'number',
-					label: 'Test',
-					default: 5,
+					label: 'Row',
+					default: 0,
 					min: 0,
-					max: 10,
+					max: instance.config.rows - 1 || 7,
+				},
+				{
+					id: 'column',
+					type: 'number',
+					label: 'Column',
+					default: 0,
+					min: 0,
+					max: instance.config.columns - 1 || 7,
 				},
 			],
 			callback: (feedback) => {
-				console.log('Hello world!', feedback.options.num)
-				if (Number(feedback.options.num) > 5) {
-					return true
-				} else {
-					return false
+				const row = Number(feedback.options.row)
+				const column = Number(feedback.options.column)
+
+				// Calculate the keyIndex from row and column
+				const keyIndex = row * (instance.config.columns || 8) + column
+
+				if (instance.buttonImages[keyIndex]) {
+					return {
+						imageBuffer: instance.buttonImages[keyIndex],
+					}
 				}
+
+				return {}
 			},
 		},
-	})
+	}
+
+	instance.setFeedbackDefinitions(feedbacks)
 }
