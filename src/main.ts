@@ -25,6 +25,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		super(internal)
 	}
 
+	get satelliteDeviceId(): string | null {
+		if (!this.config.deviceId) {
+			return null
+		}
+		return `satellite:${this.config.deviceId}`
+	}
+
 	async init(config: ModuleConfig): Promise<void> {
 		this.updateStatus(InstanceStatus.Connecting)
 
@@ -84,7 +91,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			return
 		}
 
-		if (!this.config.deviceId) {
+		if (!this.satelliteDeviceId) {
 			this.updateStatus(InstanceStatus.BadConfig, 'Missing device ID')
 			return
 		}
@@ -120,8 +127,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 		// Handle button events
 		this.client.on('draw', (props) => {
-			const deviceId = `satellite:${this.config.deviceId}`
-			if (props.deviceId === deviceId && props.image) {
+			if (props.deviceId === this.satelliteDeviceId && props.image) {
 				const keyIndex = props.keyIndex
 				// Convert keyIndex to row/column format
 				const column = keyIndex % this.config.columns
@@ -157,7 +163,12 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	registerSatelliteDevice(): void {
 		if (!this.client) return
 
-		const deviceId = `satellite:${this.config.deviceId}`
+		const deviceId = this.satelliteDeviceId
+		if (!deviceId) {
+			this.log('error', 'No device ID set')
+			return
+		}
+
 		this.client.addDevice(deviceId, 'Companion Satellite', {
 			columnCount: this.config.columns,
 			rowCount: this.config.rows,

@@ -35,9 +35,16 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					return {}
 				}
 
+				if (!feedback.image) {
+					instance.log('warn', `Image not supported for button coordinates: ${row}/${column}`)
+					return {}
+				}
+
 				// Get button image using row/column key format
 				const key = `${row}/${column}`
 				const image = instance.buttonImages.get(key)
+
+				const yOffset = feedback.image.height < feedback.image.width ? 72 - feedback.image.height : 0
 
 				if (image) {
 					return {
@@ -45,12 +52,13 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 						imageBufferEncoding: {
 							pixelFormat: 'RGB',
 						},
-						// imageBufferPosition: {
-						// 	x: 0,
-						// 	y: 0,
-						// 	width: 1,
-						// 	height: 1,
-						// }
+						imageBufferPosition: {
+							x: 0,
+							y: -yOffset,
+							width: 72 * 4,
+							height: 72 * 4,
+							drawScale: 0.25,
+						},
 					}
 				}
 

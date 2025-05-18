@@ -16,6 +16,13 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 				category: 'Buttons',
 				name: `Button ${row}/${column}`,
 				style: {
+					text: ``,
+					size: 'auto',
+					color: combineRgb(255, 255, 255),
+					bgcolor: combineRgb(0, 0, 0),
+				},
+				previewStyle: {
+					// Show the coordinates in the preset for the ui
 					text: `${row}/${column}`,
 					size: 'auto',
 					color: combineRgb(255, 255, 255),

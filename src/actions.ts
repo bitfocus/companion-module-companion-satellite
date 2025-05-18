@@ -50,18 +50,27 @@ export function UpdateActions(instance: ModuleInstance): void {
 					return
 				}
 
+				const deviceId = instance.satelliteDeviceId
+				if (!deviceId) {
+					instance.log('warn', 'No device ID found')
+					return
+				}
+
 				switch (eventType) {
 					case 'press':
-						instance.client.keyDownXY(instance.config.deviceId, column, row)
+						instance.client.keyDownXY(deviceId, column, row)
 						break
 					case 'release':
-						instance.client.keyUpXY(instance.config.deviceId, column, row)
+						instance.client.keyUpXY(deviceId, column, row)
 						break
 					case 'rotate-left':
-						instance.client.rotateLeftXY(instance.config.deviceId, column, row)
+						instance.client.rotateLeftXY(deviceId, column, row)
 						break
 					case 'rotate-right':
-						instance.client.rotateRightXY(instance.config.deviceId, column, row)
+						instance.client.rotateRightXY(deviceId, column, row)
+						break
+					default:
+						instance.log('warn', `Unhandled event type: ${eventType}`)
 						break
 				}
 			},
