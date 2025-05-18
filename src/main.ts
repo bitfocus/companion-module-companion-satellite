@@ -88,6 +88,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			this.client = undefined
 		}
 
+		this.buttonImages.clear()
+		this.checkFeedbacks('buttonImage')
+
 		if (!this.config.host) {
 			this.updateStatus(InstanceStatus.BadConfig, 'Missing host address')
 			return

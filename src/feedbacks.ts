@@ -1,4 +1,5 @@
 import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
+import { NOT_CONNECTED_IMAGE } from './images.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
 
@@ -41,13 +42,29 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					return {}
 				}
 
-				// Get button image using row/column key format
-				const key = `${row}/${column}`
-				const image = instance.buttonImages.get(key)
-
 				// Crude attempt to avoid double topbar
 				const yOffset =
 					feedback.image.height < feedback.image.width ? DEFAULT_BASE_RESOLUTION - feedback.image.height : 0
+
+				// If the client is not connected, return a default image
+				if (!instance.client || !instance.client.connected) {
+					return {
+						imageBuffer: NOT_CONNECTED_IMAGE,
+						imageBufferEncoding: {
+							pixelFormat: 'RGB',
+						},
+						imageBufferPosition: {
+							x: 0,
+							y: -yOffset,
+							width: 72,
+							height: 72,
+						},
+					}
+				}
+
+				// Get button image using row/column key format
+				const key = `${row}/${column}`
+				const image = instance.buttonImages.get(key)
 
 				if (image) {
 					const resolution = instance.config.bitmapResolution || 1
