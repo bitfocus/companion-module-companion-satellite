@@ -32,8 +32,7 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 					{
 						feedbackId: 'buttonImage',
 						options: {
-							row: row,
-							column: column,
+							location: `${row}/${column}`,
 						},
 					},
 				],
@@ -43,8 +42,7 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 							{
 								actionId: 'keyEvent',
 								options: {
-									row: row,
-									column: column,
+									location: `${row}/${column}`,
 									eventType: 'press',
 								},
 							},
@@ -53,9 +51,26 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 							{
 								actionId: 'keyEvent',
 								options: {
-									row: row,
-									column: column,
+									location: `${row}/${column}`,
 									eventType: 'release',
+								},
+							},
+						],
+						rotate_left: [
+							{
+								actionId: 'keyEvent',
+								options: {
+									location: `${row}/${column}`,
+									eventType: 'rotate-left',
+								},
+							},
+						],
+						rotate_right: [
+							{
+								actionId: 'keyEvent',
+								options: {
+									location: `${row}/${column}`,
+									eventType: 'rotate-right',
 								},
 							},
 						],

@@ -11,29 +11,33 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 			description: 'Shows the image from the connected Companion button',
 			options: [
 				{
-					id: 'row',
-					type: 'number',
-					label: 'Row',
-					default: 0,
-					min: 0,
-					max: instance.config.rows - 1,
-				},
-				{
-					id: 'column',
-					type: 'number',
-					label: 'Column',
-					default: 0,
-					min: 0,
-					max: instance.config.columns - 1,
+					id: 'location',
+					type: 'textinput',
+					label: 'Location (row/column)',
+					default: '0/0',
+					regex: '/^\\d+\\/\\d+$/',
+					useVariables: { local: true },
 				},
 			],
-			callback: (feedback) => {
-				const row = Number(feedback.options.row)
-				const column = Number(feedback.options.column)
+			callback: async (feedback, context) => {
+				// Parse the location string (format: row/column) with variable parsing
+				const locationStr = (await context.parseVariablesInString(String(feedback.options.location))).trim()
+
+				// Check if the string matches the expected format
+				const locationRegex = /^(\d+)\/(\d+)$/
+				const match = locationStr.match(locationRegex)
+
+				if (!match) {
+					instance.log('warn', `Invalid button coordinates format: ${locationStr}. Expected format: row/column`)
+					return {}
+				}
+
+				const row = Number(match[1])
+				const column = Number(match[2])
 
 				// Validate row and column are within allowed range using the instance properties
 				if (row < 0 || row >= instance.config.rows || column < 0 || column >= instance.config.columns) {
-					instance.log('warn', `Invalid button coordinates: ${row}/${column}`)
+					instance.log('warn', `Invalid button coordinates: ${locationStr}`)
 					return {}
 				}
 
