@@ -1,5 +1,5 @@
 import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
-import { NOT_CONNECTED_IMAGE } from './images.js'
+import { CONNECTED_NO_BITMAP_IMAGE, NOT_CONNECTED_IMAGE } from './images.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
 
@@ -83,7 +83,19 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					}
 				}
 
-				return {}
+				// Connected but no bitmap available for this button
+				return {
+					imageBuffer: CONNECTED_NO_BITMAP_IMAGE,
+					imageBufferEncoding: {
+						pixelFormat: 'RGB',
+					},
+					imageBufferPosition: {
+						x: 0,
+						y: -yOffset,
+						width: 72,
+						height: 72,
+					},
+				}
 			},
 		},
 	}
