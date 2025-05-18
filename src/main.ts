@@ -4,7 +4,7 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { CompanionSatelliteClient } from '../reference/client.js'
+import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
 
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
@@ -125,11 +125,15 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		})
 
 		// Connect to the remote Companion instance
-		void this.client.connect({
-			mode: 'tcp',
-			host: this.config.host,
-			port: this.config.port,
-		})
+		this.client
+			.connect({
+				mode: 'tcp',
+				host: this.config.host,
+				port: this.config.port,
+			})
+			.catch((error) => {
+				this.log('error', `Failed to connect: ${error.message}`)
+			})
 	}
 
 	// Register this satellite device with the remote Companion
@@ -149,10 +153,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			brightness: true,
 		})
 	}
-
 	// Update module variables based on connection state
 	updateVariables(): void {
-		const variables: { [key: string]: string } = {
+		const variables = {
 			connection_state: this.client?.connected ? 'Connected' : 'Disconnected',
 			companion_version: this.client?.companionVersion || 'Unknown',
 			companion_api_version: this.client?.companionApiVersion || 'Unknown',

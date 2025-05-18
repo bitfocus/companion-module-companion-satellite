@@ -2,6 +2,10 @@ import type { ModuleInstance } from './main.js'
 import { ComposeActionDefinitions } from '@companion-module/base'
 
 export function UpdateActions(instance: ModuleInstance): void {
+	// Determine max rows and columns based on config
+	const maxRow = typeof instance.config.rows === 'number' ? instance.config.rows - 1 : 7
+	const maxCol = typeof instance.config.columns === 'number' ? instance.config.columns - 1 : 7
+
 	const actions: ComposeActionDefinitions = {
 		keyEvent: {
 			name: 'Button Event',
@@ -12,7 +16,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					label: 'Row',
 					default: 0,
 					min: 0,
-					max: instance.config.rows - 1 || 7,
+					max: maxRow,
 				},
 				{
 					id: 'column',
@@ -20,7 +24,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					label: 'Column',
 					default: 0,
 					min: 0,
-					max: instance.config.columns - 1 || 7,
+					max: maxCol,
 				},
 				{
 					id: 'eventType',
@@ -43,6 +47,18 @@ export function UpdateActions(instance: ModuleInstance): void {
 				const row = Number(event.options.row)
 				const column = Number(event.options.column)
 				const eventType = String(event.options.eventType)
+
+				// Validate row and column are within allowed range
+				const maxRow = typeof instance.config.rows === 'number' ? instance.config.rows - 1 : 7
+				const maxCol = typeof instance.config.columns === 'number' ? instance.config.columns - 1 : 7
+
+				if (row < 0 || row > maxRow || column < 0 || column > maxCol) {
+					instance.log(
+						'warn',
+						`Invalid button coordinates: row=${row}, column=${column}. Valid range is: row=0-${maxRow}, column=0-${maxCol}`,
+					)
+					return
+				}
 
 				switch (eventType) {
 					case 'press':

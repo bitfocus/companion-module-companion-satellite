@@ -1,8 +1,8 @@
-import { combineRgb } from '@companion-module/base'
+import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
 
-export function GetPresets(instance: ModuleInstance) {
-	const presets: { [id: string]: any } = {}
+export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions {
+	const presets: CompanionPresetDefinitions = {}
 
 	// Use the configured row and column count, or default to 8x4
 	const columnCount = typeof instance.config.columns === 'number' ? instance.config.columns : 8
@@ -26,13 +26,10 @@ export function GetPresets(instance: ModuleInstance) {
 			},
 			feedbacks: [
 				{
-					type: 'buttonImage',
+					feedbackId: 'buttonImage',
 					options: {
 						row: row,
 						column: column,
-					},
-					style: {
-						// The style will be replaced by the image
 					},
 				},
 			],

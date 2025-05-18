@@ -24,8 +24,8 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "~1.11.3",
-		"semver": "^7.6.0",
-		"ws": "^8.19.0"
+		"semver": "^7.7.2",
+		"ws": "^8.18.2"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.3.0",
