@@ -19,8 +19,7 @@ function validateConfig(config: ModuleConfig): ModuleConfig {
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	client?: CompanionSatelliteClient
-	deviceId = 'companion-satellite'
-	buttonImages: { [key: number]: Buffer } = {}
+	readonly buttonImages = new Map<string, Buffer>()
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -85,6 +84,11 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			return
 		}
 
+		if (!this.config.deviceId) {
+			this.updateStatus(InstanceStatus.BadConfig, 'Missing device ID')
+			return
+		}
+
 		// Create a new client
 		this.client = new CompanionSatelliteClient({ debug: true })
 
@@ -116,15 +120,20 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 		// Handle button events
 		this.client.on('draw', (props) => {
-			if (props.deviceId === this.deviceId && props.image) {
+			const deviceId = `satellite:${this.config.deviceId}`
+			if (props.deviceId === deviceId && props.image) {
 				const keyIndex = props.keyIndex
-				this.buttonImages[keyIndex] = props.image
+				// Convert keyIndex to row/column format
+				const column = keyIndex % this.config.columns
+				const row = Math.floor(keyIndex / this.config.columns)
+				const key = `${row}/${column}`
+				this.buttonImages.set(key, props.image)
 				this.checkFeedbacks('buttonImage')
 			}
 		})
 
 		this.client.on('clearDeck', () => {
-			this.buttonImages = {}
+			this.buttonImages.clear()
 			this.checkFeedbacks('buttonImage')
 		})
 
@@ -148,7 +157,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	registerSatelliteDevice(): void {
 		if (!this.client) return
 
-		this.client.addDevice(this.deviceId, 'Companion Satellite', {
+		const deviceId = `satellite:${this.config.deviceId}`
+		this.client.addDevice(deviceId, 'Companion Satellite', {
 			columnCount: this.config.columns,
 			rowCount: this.config.rows,
 			bitmapSize: 72 * 4, // TODO - customisable?

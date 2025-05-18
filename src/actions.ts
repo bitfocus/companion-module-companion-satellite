@@ -52,16 +52,16 @@ export function UpdateActions(instance: ModuleInstance): void {
 
 				switch (eventType) {
 					case 'press':
-						instance.client.keyDownXY(instance.deviceId, column, row)
+						instance.client.keyDownXY(instance.config.deviceId, column, row)
 						break
 					case 'release':
-						instance.client.keyUpXY(instance.deviceId, column, row)
+						instance.client.keyUpXY(instance.config.deviceId, column, row)
 						break
 					case 'rotate-left':
-						instance.client.rotateLeftXY(instance.deviceId, column, row)
+						instance.client.rotateLeftXY(instance.config.deviceId, column, row)
 						break
 					case 'rotate-right':
-						instance.client.rotateRightXY(instance.deviceId, column, row)
+						instance.client.rotateRightXY(instance.config.deviceId, column, row)
 						break
 				}
 			},

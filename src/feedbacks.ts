@@ -35,12 +35,13 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					return {}
 				}
 
-				// Calculate the keyIndex from row and column
-				const keyIndex = row * (instance.config.columns || 8) + column
+				// Get button image using row/column key format
+				const key = `${row}/${column}`
+				const image = instance.buttonImages.get(key)
 
-				if (instance.buttonImages[keyIndex]) {
+				if (image) {
 					return {
-						imageBuffer: instance.buttonImages[keyIndex],
+						imageBuffer: image,
 						imageBufferEncoding: {
 							pixelFormat: 'RGB',
 						},

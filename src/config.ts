@@ -6,6 +6,7 @@ export interface ModuleConfig {
 	port: number
 	columns: number
 	rows: number
+	deviceId: string
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {
@@ -25,6 +26,14 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 1,
 			max: 65535,
 			default: DEFAULT_TCP_PORT,
+		},
+		{
+			type: 'textinput',
+			id: 'deviceId',
+			label: 'Device ID',
+			width: 12,
+			tooltip: 'A unique identifier for this satellite device. This is a substitute for a serial number.',
+			required: true,
 		},
 		{
 			type: 'number',
