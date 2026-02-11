@@ -13,6 +13,14 @@ export interface ModuleConfig {
 export function GetConfigFields(): SomeCompanionConfigField[] {
 	return [
 		{
+			type: 'static-text',
+			id: '_about',
+			label: 'Information',
+			value:
+				'This module allows you to connect to another Companion installation over the Satellite API and interact with it as though this is a satellite surface.<br />While this is not the simplest way to interact with a Companion installation, it is flexible and allows for limiting the scope of what this client can do based on what pages are made available',
+			width: 12,
+		},
+		{
 			type: 'textinput',
 			id: 'host',
 			label: 'Target IP/Hostname',
