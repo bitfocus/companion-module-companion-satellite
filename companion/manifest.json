@@ -1,4 +1,5 @@
 {
+	"$schema": "../node_modules/@companion-module/base/assets/manifest.schema.json",
 	"id": "companion-satellite",
 	"name": "companion-satellite",
 	"shortname": "satellite",
@@ -22,5 +23,11 @@
 	"legacyIds": [],
 	"manufacturer": "Bitfocus Companion",
 	"products": ["Satellite API"],
-	"keywords": []
+	"keywords": [],
+	"bonjourQueries": {
+		"bonjour": {
+			"protocol": "tcp",
+			"type": "companion-satellite-tcp"
+		}
+	}
 }

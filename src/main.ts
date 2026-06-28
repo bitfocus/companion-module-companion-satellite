@@ -6,7 +6,7 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
-import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
+import { DEFAULT_BASE_RESOLUTION, DEFAULT_TCP_PORT } from './client-types.js'
 
 // Validate config and update derived values
 function validateConfig(config: ModuleConfig): ModuleConfig {
@@ -91,7 +91,9 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.buttonImages.clear()
 		this.checkFeedbacks('buttonImage')
 
-		if (!this.config.host) {
+		// A selected Bonjour device takes priority over the manual host/port fields
+		const target = this.getConnectionTarget()
+		if (!target) {
 			this.updateStatus(InstanceStatus.BadConfig, 'Missing host address')
 			return
 		}
@@ -156,12 +158,30 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.client
 			.connect({
 				mode: 'tcp',
-				host: this.config.host,
-				port: this.config.port,
+				host: target.host,
+				port: target.port,
 			})
 			.catch((error) => {
 				this.log('error', `Failed to connect: ${error.message}`)
 			})
+	}
+
+	// Resolve the host/port to connect to, preferring a selected Bonjour device over the manual fields
+	getConnectionTarget(): { host: string; port: number } | null {
+		if (this.config.bonjour) {
+			// A bonjour-device field stores its value as a "host:port" string
+			const [host, port] = this.config.bonjour.split(':')
+			if (host) {
+				const parsedPort = Number(port)
+				return { host, port: Number.isInteger(parsedPort) && parsedPort > 0 ? parsedPort : DEFAULT_TCP_PORT }
+			}
+		}
+
+		if (this.config.host) {
+			return { host: this.config.host, port: this.config.port }
+		}
+
+		return null
 	}
 
 	// Register this satellite device with the remote Companion
@@ -190,7 +210,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			connection_state: this.client?.connected ? 'Connected' : 'Disconnected',
 			companion_version: this.client?.companionVersion || 'Unknown',
 			companion_api_version: this.client?.companionApiVersion || 'Unknown',
-			target_address: this.client?.displayHost || this.config.host || 'Not configured',
+			target_address: this.client?.displayHost || this.getConnectionTarget()?.host || 'Not configured',
 		}
 
 		this.setVariableValues(variables)

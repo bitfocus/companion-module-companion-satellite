@@ -2,6 +2,7 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 import { DEFAULT_TCP_PORT } from './client-types.js'
 
 export interface ModuleConfig {
+	bonjour: string | null
 	host: string
 	port: number
 	columns: number
@@ -21,11 +22,20 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 12,
 		},
 		{
+			type: 'bonjour-device',
+			id: 'bonjour',
+			label: 'Bonjour Device',
+			width: 12,
+			tooltip:
+				'Select a Companion instance that is advertising itself over Bonjour. Selecting one will auto-fill the Host and Port fields.',
+		},
+		{
 			type: 'textinput',
 			id: 'host',
 			label: 'Target IP/Hostname',
 			width: 8,
 			regex: Regex.HOSTNAME,
+			isVisibleExpression: '!$(options:bonjour)',
 		},
 		{
 			type: 'number',
@@ -35,6 +45,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			min: 1,
 			max: 65535,
 			default: DEFAULT_TCP_PORT,
+			isVisibleExpression: '!$(options:bonjour)',
 		},
 		{
 			type: 'textinput',
