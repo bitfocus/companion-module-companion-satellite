@@ -1,4 +1,5 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import { createHash } from 'node:crypto'
 import { GetConfigFields, type ModuleConfig } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
@@ -7,6 +8,9 @@ import { UpdateFeedbacks } from './feedbacks.js'
 import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
 import { DEFAULT_BASE_RESOLUTION, DEFAULT_TCP_PORT } from './client-types.js'
+import { rgbBufferToPngDataUrl } from './png.js'
+
+const RGB_PNG_CACHE_LIMIT = 256
 
 // Validate config and update derived values
 function validateConfig(config: ModuleConfig): ModuleConfig {
@@ -21,7 +25,8 @@ function validateConfig(config: ModuleConfig): ModuleConfig {
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	client?: CompanionSatelliteClient
-	readonly buttonImages = new Map<string, Buffer>()
+	readonly buttonImages = new Map<string, Buffer | string>()
+	private readonly rgbPngCache = new Map<string, string>()
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -46,6 +51,28 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			this.client.removeAllListeners()
 			this.client = undefined
 		}
+		this.rgbPngCache.clear()
+	}
+
+	private convertRgbToPngCached(rgb: Buffer, width: number, height: number): string {
+		const digest = createHash('sha1').update(rgb).digest('base64url')
+		const cacheKey = `${width}x${height}:${digest}`
+		const cached = this.rgbPngCache.get(cacheKey)
+		if (cached) {
+			// Refresh insertion order so the map behaves as an LRU cache.
+			this.rgbPngCache.delete(cacheKey)
+			this.rgbPngCache.set(cacheKey, cached)
+			return cached
+		}
+
+		const png = rgbBufferToPngDataUrl(rgb, width, height)
+		this.rgbPngCache.set(cacheKey, png)
+		if (this.rgbPngCache.size > RGB_PNG_CACHE_LIMIT) {
+			const oldestKey = this.rgbPngCache.keys().next().value
+			if (oldestKey !== undefined) this.rgbPngCache.delete(oldestKey)
+		}
+
+		return png
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
@@ -140,7 +167,17 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 				const column = keyIndex % this.config.columns
 				const row = Math.floor(keyIndex / this.config.columns)
 				const key = `${row}/${column}`
-				this.buttonImages.set(key, props.image)
+				let image = props.image
+				if (Buffer.isBuffer(image)) {
+					const sourceSize = DEFAULT_BASE_RESOLUTION * this.config.bitmapResolution
+					try {
+						image = this.convertRgbToPngCached(image, sourceSize, sourceSize)
+					} catch (error) {
+						this.log('warn', `Failed to convert button ${key} RGB bitmap to PNG: ${error}`)
+					}
+				}
+				if (this.buttonImages.get(key) === image) return
+				this.buttonImages.set(key, image)
 				this.checkFeedbacks('buttonImage')
 			}
 		})
