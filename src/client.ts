@@ -86,6 +86,8 @@ function parseLineParameters(line: string): Record<string, string | boolean> {
 		if (fragment === '') continue
 
 		const separatorIndex = fragment.indexOf('=')
+		if (separatorIndex === 0) continue
+
 		if (separatorIndex === -1) {
 			res[fragment] = true
 		} else {
