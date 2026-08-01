@@ -83,6 +83,8 @@ function parseLineParameters(line: string): Record<string, string | boolean> {
 	const res: Record<string, string | boolean> = {}
 
 	for (const fragment of fragments) {
+		if (fragment === '') continue
+
 		const separatorIndex = fragment.indexOf('=')
 		if (separatorIndex === -1) {
 			res[fragment] = true
@@ -245,7 +247,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 				this._registeredDevices.clear()
 				this._pendingDevices.clear()
-				this._bitmapFormats = new Set(['rgb'])
+				this._bitmapFormats = new Set<SatelliteBitmapFormat>(['rgb'])
 				this._protocolReadyEmitted = false
 
 				this._connected = true
@@ -442,7 +444,14 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 		// API 1.10+ always sends CAPS immediately after BEGIN. Wait for it so
 		// registration can negotiate optional features such as PNG bitmaps.
-		if (this._companionApiVersion && semver.lt(this._companionApiVersion, '1.10.0')) this.reportProtocolReady()
+		if (this._companionApiVersion && semver.lt(this._companionApiVersion, '1.10.0')) {
+ 			this.reportProtocolReady()
+ 		} else {
+ 			// Fallback: avoid hanging forever if CAPS is never received.
+ 			setTimeout(() => this.reportProtocolReady(), 2000)
+ 		}
+
+
 	}
 
 	private handleCapabilities(params: Record<string, string | boolean>): void {
