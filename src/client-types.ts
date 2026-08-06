@@ -28,9 +28,10 @@ export interface SurfacePincodeMapCustom {
 	type: 'custom'
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export type SatelliteBitmapFormat = 'rgb' | 'png' | 'webp'
+
 export interface ClientCapabilities {
-	// For future use to support new functionality
+	bitmapFormats: readonly SatelliteBitmapFormat[]
 }
 export interface CompanionClient {
 	capabilities: ClientCapabilities
@@ -39,7 +40,7 @@ export interface CompanionClient {
 export interface SurfaceProxyDrawProps {
 	deviceId: string
 	keyIndex: number
-	image?: Buffer
+	image?: Buffer | string
 	color?: string // hex
 	text?: string
 }
