@@ -172,13 +172,14 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					const sourceSize = DEFAULT_BASE_RESOLUTION * this.config.bitmapResolution
 					try {
 						image = this.convertRgbToPngCached(image, sourceSize, sourceSize)
-				} catch (error) {
-					const message = error instanceof Error ? error.message : String(error)
-					this.log('warn', `Failed to convert button ${key} RGB bitmap to PNG: ${message}`)
+					} catch (error) {
+						const message = error instanceof Error ? error.message : String(error)
+						this.log('warn', `Failed to convert button ${key} RGB bitmap to PNG: ${message}`)
+					}
+					if (this.buttonImages.get(key) === image) return
+					this.buttonImages.set(key, image)
+					this.checkFeedbacks('buttonImage')
 				}
-				if (this.buttonImages.get(key) === image) return
-				this.buttonImages.set(key, image)
-				this.checkFeedbacks('buttonImage')
 			}
 		})
 
