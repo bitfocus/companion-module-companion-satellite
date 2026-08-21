@@ -2,6 +2,19 @@ import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
 import { CONNECTED_NO_BITMAP_IMAGE, NOT_CONNECTED_IMAGE } from './images.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
+import { ImageTransformer } from '@julusian/image-rs'
+
+const pngImageCache = new WeakMap<Buffer, Promise<string>>()
+
+async function rgbImageToPngDataUrl(image: Buffer, size: number): Promise<string> {
+	let pngDataUrl = pngImageCache.get(image)
+	if (!pngDataUrl) {
+		pngDataUrl = ImageTransformer.fromBuffer(image, size, size, 'rgb').toDataUrl('png')
+		pngImageCache.set(image, pngDataUrl)
+	}
+
+	return pngDataUrl
+}
 
 export function UpdateFeedbacks(instance: ModuleInstance): void {
 	const feedbacks: CompanionFeedbackDefinitions = {
@@ -41,28 +54,10 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					return {}
 				}
 
-				if (!feedback.image) {
-					instance.log('warn', `Image not supported for button coordinates: ${row}/${column}`)
-					return {}
-				}
-
-				// Crude attempt to avoid double topbar
-				const yOffset =
-					feedback.image.height < feedback.image.width ? DEFAULT_BASE_RESOLUTION - feedback.image.height : 0
-
 				// If the client is not connected, return a default image
 				if (!instance.client || !instance.client.connected) {
 					return {
-						imageBuffer: NOT_CONNECTED_IMAGE,
-						imageBufferEncoding: {
-							pixelFormat: 'RGB',
-						},
-						imageBufferPosition: {
-							x: 0,
-							y: -yOffset,
-							width: 72,
-							height: 72,
-						},
+						png64: await rgbImageToPngDataUrl(NOT_CONNECTED_IMAGE, DEFAULT_BASE_RESOLUTION),
 					}
 				}
 
@@ -73,32 +68,13 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				if (image) {
 					const resolution = instance.config.bitmapResolution || 1
 					return {
-						imageBuffer: image,
-						imageBufferEncoding: {
-							pixelFormat: 'RGB',
-						},
-						imageBufferPosition: {
-							x: 0,
-							y: -yOffset,
-							width: DEFAULT_BASE_RESOLUTION * resolution,
-							height: DEFAULT_BASE_RESOLUTION * resolution,
-							drawScale: 1 / resolution,
-						},
+						png64: await rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
 					}
 				}
 
 				// Connected but no bitmap available for this button
 				return {
-					imageBuffer: CONNECTED_NO_BITMAP_IMAGE,
-					imageBufferEncoding: {
-						pixelFormat: 'RGB',
-					},
-					imageBufferPosition: {
-						x: 0,
-						y: -yOffset,
-						width: 72,
-						height: 72,
-					},
+					png64: await rgbImageToPngDataUrl(CONNECTED_NO_BITMAP_IMAGE, DEFAULT_BASE_RESOLUTION),
 				}
 			},
 		},
