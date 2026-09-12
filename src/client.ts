@@ -4,6 +4,7 @@ import {
 	CompanionClient,
 	DeviceRegisterProps,
 	SurfaceProxyDrawProps,
+	SatelliteBitmapFormat,
 	assertNever,
 	DEFAULT_TCP_PORT,
 } from './client-types.js'
@@ -82,8 +83,16 @@ function parseLineParameters(line: string): Record<string, string | boolean> {
 	const res: Record<string, string | boolean> = {}
 
 	for (const fragment of fragments) {
-		const [key, value] = fragment.split('=', 2)
-		res[key] = value === undefined ? true : value
+		if (fragment === '') continue
+
+		const separatorIndex = fragment.indexOf('=')
+		if (separatorIndex === 0) continue
+
+		if (separatorIndex === -1) {
+			res[fragment] = true
+		} else {
+			res[fragment.slice(0, separatorIndex)] = fragment.slice(separatorIndex + 1)
+		}
 	}
 
 	return res
@@ -129,8 +138,10 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 	private _companionVersion: string | null = null
 	private _companionApiVersion: string | null = null
 	private _companionUnsupported = false
+	private _protocolReadyEmitted = false
 
 	private _supportsLocalLockState = false
+	private _bitmapFormats = new Set<SatelliteBitmapFormat>(['rgb'])
 
 	public get connectionDetails(): SomeConnectionDetails {
 		return this._connectionDetails
@@ -171,7 +182,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 	public get capabilities(): ClientCapabilities {
 		return {
-			// For future use
+			bitmapFormats: [...this._bitmapFormats],
 		}
 	}
 
@@ -238,6 +249,8 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 				this._registeredDevices.clear()
 				this._pendingDevices.clear()
+				this._bitmapFormats = new Set<SatelliteBitmapFormat>(['rgb'])
+				this._protocolReadyEmitted = false
 
 				this._connected = true
 				this._pingUnackedCount = 0
@@ -388,6 +401,9 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 				console.log(`Connected to Companion: ${body}`)
 				this.handleBegin(params)
 				break
+			case 'CAPS':
+				this.handleCapabilities(params)
+				break
 			case 'KEY-PRESS':
 			case 'KEY-ROTATE':
 			case 'SET-VARIABLE-VALUE':
@@ -428,10 +444,35 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		}
 		// }
 
-		// report the connection as ready
-		setImmediate(() => {
-			this.emit('connected')
-		})
+		// API 1.10+ always sends CAPS immediately after BEGIN. Wait for it so
+		// registration can negotiate optional features such as PNG bitmaps.
+		if (this._companionApiVersion && semver.lt(this._companionApiVersion, '1.10.0')) {
+ 			this.reportProtocolReady()
+ 		} else {
+ 			// Fallback: avoid hanging forever if CAPS is never received.
+ 			setTimeout(() => this.reportProtocolReady(), 2000)
+ 		}
+
+
+	}
+
+	private handleCapabilities(params: Record<string, string | boolean>): void {
+		if (typeof params.BITMAP_FORMATS === 'string') {
+			const advertisedFormats = params.BITMAP_FORMATS.split(',')
+			const supportedFormats = advertisedFormats.filter(
+				(format): format is SatelliteBitmapFormat => format === 'rgb' || format === 'png' || format === 'webp',
+			)
+			this._bitmapFormats = new Set(['rgb', ...supportedFormats])
+		}
+
+		this.reportProtocolReady()
+	}
+
+	private reportProtocolReady(): void {
+		if (this._protocolReadyEmitted || this._companionUnsupported) return
+
+		this._protocolReadyEmitted = true
+		setImmediate(() => this.emit('connected'))
 	}
 
 	private handleState(params: Record<string, string | boolean>): void {
@@ -450,7 +491,12 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			return
 		}
 
-		const image = typeof params.BITMAP === 'string' ? Buffer.from(params.BITMAP, 'base64') : undefined
+		const image =
+			typeof params.BITMAP !== 'string'
+				? undefined
+				: params.BITMAP.startsWith('data:image/')
+					? params.BITMAP
+					: Buffer.from(params.BITMAP, 'base64')
 		const text = typeof params.TEXT === 'string' ? Buffer.from(params.TEXT, 'base64').toString() : undefined
 		const color = typeof params.COLOR === 'string' ? params.COLOR : undefined
 
@@ -607,6 +653,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			this._pendingDevices.set(deviceId, Date.now())
 
 			const transferVariables = Buffer.from(JSON.stringify(props.transferVariables ?? [])).toString('base64')
+			const bitmapFormat = this._bitmapFormats.has('png') ? 'png' : undefined
 
 			this.sendMessage('ADD-DEVICE', null, deviceId, {
 				PRODUCT_NAME: productName,
@@ -618,6 +665,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 				VARIABLES: transferVariables,
 				BRIGHTNESS: props.brightness,
 				PINCODE_LOCK: props.pincodeMap ? 'FULL' : '',
+				...(bitmapFormat ? { BITMAP_FORMAT: bitmapFormat } : {}),
 			})
 		}
 	}

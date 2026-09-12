@@ -1,7 +1,19 @@
 import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
 import { CONNECTED_NO_BITMAP_IMAGE, NOT_CONNECTED_IMAGE } from './images.js'
 import type { ModuleInstance } from './main.js'
+import { rgbBufferToPngDataUrl } from './png.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
+
+const CONNECTED_NO_BITMAP_PNG = rgbBufferToPngDataUrl(
+	CONNECTED_NO_BITMAP_IMAGE,
+	DEFAULT_BASE_RESOLUTION,
+	DEFAULT_BASE_RESOLUTION,
+)
+const NOT_CONNECTED_PNG = rgbBufferToPngDataUrl(
+	NOT_CONNECTED_IMAGE,
+	DEFAULT_BASE_RESOLUTION,
+	DEFAULT_BASE_RESOLUTION,
+)
 
 export function UpdateFeedbacks(instance: ModuleInstance): void {
 	const feedbacks: CompanionFeedbackDefinitions = {
@@ -46,23 +58,12 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					return {}
 				}
 
-				// Crude attempt to avoid double topbar
-				const yOffset =
-					feedback.image.height < feedback.image.width ? DEFAULT_BASE_RESOLUTION - feedback.image.height : 0
-
 				// If the client is not connected, return a default image
 				if (!instance.client || !instance.client.connected) {
 					return {
-						imageBuffer: NOT_CONNECTED_IMAGE,
-						imageBufferEncoding: {
-							pixelFormat: 'RGB',
-						},
-						imageBufferPosition: {
-							x: 0,
-							y: -yOffset,
-							width: 72,
-							height: 72,
-						},
+						show_topbar: false,
+						png64: NOT_CONNECTED_PNG,
+						pngalignment: 'center:center',
 					}
 				}
 
@@ -71,17 +72,27 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				const image = instance.buttonImages.get(key)
 
 				if (image) {
+					if (typeof image === 'string') {
+						return {
+							show_topbar: false,
+							png64: image,
+							pngalignment: 'center:center',
+						}
+					}
+
 					const resolution = instance.config.bitmapResolution || 1
+					const sourceSize = DEFAULT_BASE_RESOLUTION * resolution
 					return {
+						show_topbar: false,
 						imageBuffer: image,
 						imageBufferEncoding: {
 							pixelFormat: 'RGB',
 						},
 						imageBufferPosition: {
 							x: 0,
-							y: -yOffset,
-							width: DEFAULT_BASE_RESOLUTION * resolution,
-							height: DEFAULT_BASE_RESOLUTION * resolution,
+							y: 0,
+							width: sourceSize,
+							height: sourceSize,
 							drawScale: 1 / resolution,
 						},
 					}
@@ -89,16 +100,9 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 
 				// Connected but no bitmap available for this button
 				return {
-					imageBuffer: CONNECTED_NO_BITMAP_IMAGE,
-					imageBufferEncoding: {
-						pixelFormat: 'RGB',
-					},
-					imageBufferPosition: {
-						x: 0,
-						y: -yOffset,
-						width: 72,
-						height: 72,
-					},
+					show_topbar: false,
+					png64: CONNECTED_NO_BITMAP_PNG,
+					pngalignment: 'center:center',
 				}
 			},
 		},
