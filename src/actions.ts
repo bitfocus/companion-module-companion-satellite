@@ -11,7 +11,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					type: 'textinput',
 					label: 'Location (row/column)',
 					default: '0/0',
-					regex: '/^\\d+\\/\\d+$/',
+					regex: '/^(\\$\\([^:)]+:[^)]+\\)(\\/(\\d+|\\$\\([^:)]+:[^)]+\\)))?|\\d+\\/(\\d+|\\$\\([^:)]+:[^)]+\\)))$/',
 					useVariables: { local: true },
 				},
 				{
