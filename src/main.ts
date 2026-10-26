@@ -196,15 +196,19 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			return
 		}
 
-		this.client.addDevice(deviceId, 'Companion Satellite', {
-			columnCount: this.config.columns,
-			rowCount: this.config.rows,
-			bitmapSize: DEFAULT_BASE_RESOLUTION * this.config.bitmapResolution,
-			colours: false,
-			text: false,
-			brightness: false,
-			pincodeMap: { type: 'custom' },
-		})
+		try {
+			this.client.addDevice(deviceId, 'Companion Satellite', {
+				columnCount: this.config.columns,
+				rowCount: this.config.rows,
+				bitmapSize: DEFAULT_BASE_RESOLUTION * this.config.bitmapResolution,
+				colours: false,
+				text: false,
+				brightness: false,
+				pincodeMap: { type: 'custom' },
+			})
+		} catch (e) {
+			this.log('error', `Failed to register device: ${e instanceof Error ? e.message : e}`)
+		}
 	}
 	// Update module variables based on connection state
 	updateVariables(): void {
