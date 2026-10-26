@@ -24,7 +24,7 @@
 	},
 	"dependencies": {
 		"@companion-app/satellite-protocol": "^0.1.0",
-		"@companion-module/base": "~2.2.1",
+		"@companion-module/base": "~2.1.0",
 		"ws": "^8.22.0"
 	},
 	"devDependencies": {

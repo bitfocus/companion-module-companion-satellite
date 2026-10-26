@@ -2,7 +2,7 @@ import {
 	InstanceBase,
 	InstanceStatus,
 	type CompanionActionSchema,
-	type CompanionAdvancedFeedbackSchema,
+	type CompanionFeedbackSchema,
 	type InstanceTypes,
 	type SomeCompanionConfigField,
 } from '@companion-module/base'
@@ -33,7 +33,7 @@ export interface ModuleTypes extends InstanceTypes {
 		keyEvent: CompanionActionSchema<KeyEventOptions, void>
 	}
 	feedbacks: {
-		buttonImage: CompanionAdvancedFeedbackSchema<ButtonImageOptions>
+		buttonImage: CompanionFeedbackSchema<ButtonImageOptions> & { type: 'advanced' }
 	}
 	variables: {
 		connection_state: string
