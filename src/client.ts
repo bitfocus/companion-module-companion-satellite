@@ -29,6 +29,7 @@ import {
 	ICompanionSatelliteClientOptions,
 	SomeConnectionDetails,
 } from './client-implementations.js'
+import { rgbToPngDataUrl } from './png.js'
 
 /**
  * This implementation is derived from the companion-satellite project
@@ -78,6 +79,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 	private _registeredDevices = new Set<string>()
 	private _pendingDevices = new Map<string, number>() // Time submitted
+	private _deviceBitmapSizes = new Map<string, number>()
 
 	private _companionVersion: string | null = null
 	private _companionApiVersion: string | null = null
@@ -437,18 +439,27 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			return
 		}
 
-		// A negotiated compressed format arrives as a data url, otherwise it is raw rgb
-		const image =
-			typeof params.BITMAP !== 'string'
-				? undefined
-				: params.BITMAP.startsWith('data:')
-					? params.BITMAP
-					: Buffer.from(params.BITMAP, 'base64')
+		const image = typeof params.BITMAP === 'string' ? this.bitmapToDataUrl(params.DEVICEID, params.BITMAP) : undefined
 		const text = typeof params.TEXT === 'string' ? Buffer.from(params.TEXT, 'base64').toString() : undefined
 		const color = typeof params.COLOR === 'string' ? params.COLOR : undefined
 
 		this.emit('draw', { deviceId: params.DEVICEID, keyIndex, image, text, color })
 	}
+	private bitmapToDataUrl(deviceId: string, bitmap: string): string | undefined {
+		// A negotiated compressed format arrives as a data url, otherwise it is raw rgb
+		if (bitmap.startsWith('data:')) return bitmap
+
+		const size = this._deviceBitmapSizes.get(deviceId)
+		if (!size) return undefined
+
+		try {
+			return rgbToPngDataUrl(Buffer.from(bitmap, 'base64'), size, size)
+		} catch (e) {
+			this.emit('log', `Failed to convert bitmap for ${deviceId}: ${e}`)
+			return undefined
+		}
+	}
+
 	private handleClear(params: ParsedParams): void {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Mising DEVICEID in KEYS-CLEAR response')
@@ -598,6 +609,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 		if (this._connected && this.socket) {
 			this._pendingDevices.set(deviceId, Date.now())
+			this._deviceBitmapSizes.set(deviceId, props.bitmapSize ?? 0)
 
 			const transferVariables = Buffer.from(JSON.stringify(props.transferVariables ?? [])).toString('base64')
 

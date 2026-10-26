@@ -1,20 +1,6 @@
-import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
-import { CONNECTED_NO_BITMAP_IMAGE, NOT_CONNECTED_IMAGE } from './images.js'
+import { CONNECTED_NO_BITMAP_PNG, NOT_CONNECTED_PNG } from './images.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
-import { rgbToPngDataUrl } from './png.js'
-
-const pngImageCache = new WeakMap<Buffer, string>()
-
-function rgbImageToPngDataUrl(image: Buffer, size: number): string {
-	let pngDataUrl = pngImageCache.get(image)
-	if (!pngDataUrl) {
-		pngDataUrl = rgbToPngDataUrl(image, size, size)
-		pngImageCache.set(image, pngDataUrl)
-	}
-
-	return pngDataUrl
-}
 
 export function UpdateFeedbacks(instance: ModuleInstance): void {
 	const feedbacks: CompanionFeedbackDefinitions = {
@@ -57,7 +43,7 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				// If the client is not connected, return a default image
 				if (!instance.client || !instance.client.connected) {
 					return {
-						png64: rgbImageToPngDataUrl(NOT_CONNECTED_IMAGE, DEFAULT_BASE_RESOLUTION),
+						png64: NOT_CONNECTED_PNG,
 					}
 				}
 
@@ -65,17 +51,9 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				const key = `${row}/${column}`
 				const image = instance.buttonImages.get(key)
 
-				if (image) {
-					const resolution = instance.config.bitmapResolution || 1
-					return {
-						png64:
-							typeof image === 'string' ? image : rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
-					}
-				}
-
-				// Connected but no bitmap available for this button
 				return {
-					png64: rgbImageToPngDataUrl(CONNECTED_NO_BITMAP_IMAGE, DEFAULT_BASE_RESOLUTION),
+					// Fall back to a placeholder when no bitmap is available for this button
+					png64: image ?? CONNECTED_NO_BITMAP_PNG,
 				}
 			},
 		},

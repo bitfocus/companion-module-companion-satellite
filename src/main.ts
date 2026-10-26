@@ -21,7 +21,7 @@ function validateConfig(config: ModuleConfig): ModuleConfig {
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	config!: ModuleConfig // Setup in init()
 	client?: CompanionSatelliteClient
-	readonly buttonImages = new Map<string, Buffer | string>()
+	readonly buttonImages = new Map<string, string>()
 
 	constructor(internal: unknown) {
 		super(internal)
