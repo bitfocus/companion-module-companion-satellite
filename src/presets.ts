@@ -1,4 +1,4 @@
-import { combineRgb, CompanionPresetDefinitions } from '@companion-module/base'
+import { CompanionPresetDefinitions } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
 
 export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions {
@@ -18,16 +18,16 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 				style: {
 					text: ``,
 					size: 'auto',
-					color: combineRgb(255, 255, 255),
-					bgcolor: combineRgb(0, 0, 0),
+					color: 0xffffff,
+					bgcolor: 0x000000,
 					show_topbar: false,
 				},
 				previewStyle: {
 					// Show the coordinates in the preset for the ui
 					text: `${row}/${column}`,
 					size: 'auto',
-					color: combineRgb(255, 255, 255),
-					bgcolor: combineRgb(0, 0, 0),
+					color: 0xffffff,
+					bgcolor: 0x000000,
 				},
 				feedbacks: [
 					{
