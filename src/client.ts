@@ -180,7 +180,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 					this._pingInterval = undefined
 				}
 
-				if (!this._retryConnectTimeout && this.socket === socket) {
+				if (!this._retryConnectTimeout && this._connectionActive && this.socket === socket) {
 					this._retryConnectTimeout = setTimeout(
 						() => {
 							this._retryConnectTimeout = undefined
@@ -286,16 +286,15 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			delete this._pingInterval
 		}
 
-		if (!this._connected) {
-			return
-		}
+		// Always drop the socket, even if it hasn't connected yet, so it can't schedule a reconnect
+		const socket = this.socket
+		this.socket = undefined
+		if (!socket) return
 
-		try {
-			this.socket?.end()
-			this.socket = undefined
-		} catch (e) {
-			this.socket = undefined
-			throw e
+		if (this._connected) {
+			socket.end()
+		} else {
+			socket.destroy()
 		}
 	}
 
