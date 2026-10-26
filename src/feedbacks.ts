@@ -68,7 +68,8 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				if (image) {
 					const resolution = instance.config.bitmapResolution || 1
 					return {
-						png64: rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
+						png64:
+							typeof image === 'string' ? image : rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
 					}
 				}
 

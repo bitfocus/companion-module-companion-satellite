@@ -16,7 +16,11 @@ import {
 	type SatelliteMessageArgs,
 } from '@companion-app/satellite-protocol/codec'
 import { MAX_LINE_LENGTH } from '@companion-app/satellite-protocol/constants'
-import { isApiVersionAtLeast, SATELLITE_FEATURES } from '@companion-app/satellite-protocol/versions'
+import {
+	getSatelliteFeatures,
+	isApiVersionAtLeast,
+	SATELLITE_FEATURES,
+} from '@companion-app/satellite-protocol/versions'
 import {
 	CompanionSatelliteTcpClient,
 	CompanionSatelliteWsClient,
@@ -78,6 +82,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 	private _companionVersion: string | null = null
 	private _companionApiVersion: string | null = null
 	private _companionUnsupported = false
+	private _companionCaps: ParsedParams | null = null
 
 	private _supportsLocalLockState = false
 
@@ -196,6 +201,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 				this._registeredDevices.clear()
 				this._pendingDevices.clear()
+				this._companionCaps = null
 
 				this._connected = true
 				this._pingUnackedCount = 0
@@ -342,6 +348,9 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 				console.log(`Connected to Companion: ${body}`)
 				this.handleBegin(params)
 				break
+			case 'CAPS':
+				this.handleCaps(params)
+				break
 			case 'KEY-PRESS':
 			case 'KEY-ROTATE':
 			case 'SET-VARIABLE-VALUE':
@@ -385,10 +394,31 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		}
 		// }
 
+		// When supported, the connection is not ready until CAPS has been received
+		if (this._companionApiVersion && isApiVersionAtLeast(this._companionApiVersion, SATELLITE_FEATURES.caps.since))
+			return
+
 		// report the connection as ready
 		setImmediate(() => {
 			this.emit('connected')
 		})
+	}
+
+	private handleCaps(params: ParsedParams): void {
+		this._companionCaps = params
+
+		// report the connection as ready
+		setImmediate(() => {
+			this.emit('connected')
+		})
+	}
+
+	private supportsPngBitmaps(): boolean {
+		if (!this._companionApiVersion) return false
+		if (!getSatelliteFeatures(this._companionApiVersion, this._companionCaps).bitmapFormats) return false
+
+		const formats = this._companionCaps?.BITMAP_FORMATS
+		return typeof formats === 'string' && formats.split(',').includes('png')
 	}
 
 	private handleState(params: ParsedParams): void {
@@ -407,7 +437,13 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			return
 		}
 
-		const image = typeof params.BITMAP === 'string' ? Buffer.from(params.BITMAP, 'base64') : undefined
+		// A negotiated compressed format arrives as a data url, otherwise it is raw rgb
+		const image =
+			typeof params.BITMAP !== 'string'
+				? undefined
+				: params.BITMAP.startsWith('data:')
+					? params.BITMAP
+					: Buffer.from(params.BITMAP, 'base64')
 		const text = typeof params.TEXT === 'string' ? Buffer.from(params.TEXT, 'base64').toString() : undefined
 		const color = typeof params.COLOR === 'string' ? params.COLOR : undefined
 
@@ -575,6 +611,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 				VARIABLES: transferVariables,
 				BRIGHTNESS: props.brightness,
 				PINCODE_LOCK: props.pincodeMap ? 'FULL' : '',
+				...(props.bitmapSize && this.supportsPngBitmaps() ? { BITMAP_FORMAT: 'png' } : {}),
 			})
 		}
 	}

@@ -39,7 +39,7 @@ export interface CompanionClient {
 export interface SurfaceProxyDrawProps {
 	deviceId: string
 	keyIndex: number
-	image?: Buffer
+	image?: Buffer | string // raw rgb, or a data url
 	color?: string // hex
 	text?: string
 }
