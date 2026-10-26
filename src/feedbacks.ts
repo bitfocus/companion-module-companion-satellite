@@ -2,14 +2,14 @@ import { DEFAULT_BASE_RESOLUTION } from './client-types.js'
 import { CONNECTED_NO_BITMAP_IMAGE, NOT_CONNECTED_IMAGE } from './images.js'
 import type { ModuleInstance } from './main.js'
 import { CompanionFeedbackDefinitions } from '@companion-module/base'
-import { ImageTransformer } from '@julusian/image-rs'
+import { rgbToPngDataUrl } from './png.js'
 
-const pngImageCache = new WeakMap<Buffer, Promise<string>>()
+const pngImageCache = new WeakMap<Buffer, string>()
 
-async function rgbImageToPngDataUrl(image: Buffer, size: number): Promise<string> {
+function rgbImageToPngDataUrl(image: Buffer, size: number): string {
 	let pngDataUrl = pngImageCache.get(image)
 	if (!pngDataUrl) {
-		pngDataUrl = ImageTransformer.fromBuffer(image, size, size, 'rgb').toDataUrl('png')
+		pngDataUrl = rgbToPngDataUrl(image, size, size)
 		pngImageCache.set(image, pngDataUrl)
 	}
 
@@ -57,7 +57,7 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				// If the client is not connected, return a default image
 				if (!instance.client || !instance.client.connected) {
 					return {
-						png64: await rgbImageToPngDataUrl(NOT_CONNECTED_IMAGE, DEFAULT_BASE_RESOLUTION),
+						png64: rgbImageToPngDataUrl(NOT_CONNECTED_IMAGE, DEFAULT_BASE_RESOLUTION),
 					}
 				}
 
@@ -68,13 +68,13 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 				if (image) {
 					const resolution = instance.config.bitmapResolution || 1
 					return {
-						png64: await rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
+						png64: rgbImageToPngDataUrl(image, DEFAULT_BASE_RESOLUTION * resolution),
 					}
 				}
 
 				// Connected but no bitmap available for this button
 				return {
-					png64: await rgbImageToPngDataUrl(CONNECTED_NO_BITMAP_IMAGE, DEFAULT_BASE_RESOLUTION),
+					png64: rgbImageToPngDataUrl(CONNECTED_NO_BITMAP_IMAGE, DEFAULT_BASE_RESOLUTION),
 				}
 			},
 		},
