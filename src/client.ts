@@ -7,7 +7,16 @@ import {
 	assertNever,
 	DEFAULT_TCP_PORT,
 } from './client-types.js'
-import * as semver from 'semver'
+import {
+	formatSatelliteMessage,
+	parseLineParameters,
+	SatelliteLineBuffer,
+	splitSatelliteCommand,
+	type ParsedParams,
+	type SatelliteMessageArgs,
+} from '@companion-app/satellite-protocol/codec'
+import { MAX_LINE_LENGTH } from '@companion-app/satellite-protocol/constants'
+import { isApiVersionAtLeast, SATELLITE_FEATURES } from '@companion-app/satellite-protocol/versions'
 import {
 	CompanionSatelliteTcpClient,
 	CompanionSatelliteWsClient,
@@ -28,66 +37,6 @@ const RECONNECT_DELAY = 1000
 const RECONNECT_DELAY_UNSUPPORTED = 30000
 
 const MINIMUM_PROTOCOL_VERSION = '1.7.0' // Companion 3.4
-
-function parseLineParameters(line: string): Record<string, string | boolean> {
-	const makeSafe = (index: number): number => {
-		return index === -1 ? Number.POSITIVE_INFINITY : index
-	}
-
-	const fragments: string[] = ['']
-	let quotes = 0
-
-	let i = 0
-	while (i < line.length) {
-		// Find the next characters of interest
-		const spaceIndex = makeSafe(line.indexOf(' ', i))
-		const slashIndex = makeSafe(line.indexOf('\\', i))
-		const quoteIndex = makeSafe(line.indexOf('"', i))
-
-		// Find which is closest
-		const o = Math.min(spaceIndex, slashIndex, quoteIndex)
-		if (!isFinite(o)) {
-			// None were found, copy the remainder and stop
-			const slice = line.substring(i)
-			fragments[fragments.length - 1] += slice
-
-			break
-		} else {
-			// copy the slice before this character
-			const slice = line.substring(i, o)
-			fragments[fragments.length - 1] += slice
-
-			const c = line[o]
-			if (c == '\\') {
-				// If char is a slash, the character following it is of interest
-				// Future: does this consider non \" chars?
-				fragments[fragments.length - 1] += line[o + 1]
-
-				i = o + 2
-			} else {
-				i = o + 1
-
-				// Figure out what the char was
-				if (c === '"') {
-					quotes ^= 1
-				} else if (!quotes && c === ' ') {
-					fragments.push('')
-				} else {
-					fragments[fragments.length - 1] += c
-				}
-			}
-		}
-	}
-
-	const res: Record<string, string | boolean> = {}
-
-	for (const fragment of fragments) {
-		const [key, value] = fragment.split('=', 2)
-		res[key] = value === undefined ? true : value
-	}
-
-	return res
-}
 
 export interface CompanionSatelliteClientOptions {
 	debug?: boolean
@@ -113,7 +62,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 	private readonly debug: boolean
 	private socket: ICompanionSatelliteClient | undefined
 
-	private receiveBuffer = ''
+	private readonly receiveBuffer = new SatelliteLineBuffer(MAX_LINE_LENGTH)
 
 	private _pingInterval: NodeJS.Timeout | undefined
 	private _pingUnackedCount = 0
@@ -212,7 +161,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 					this._companionUnsupported = false
 				}
 				this._connected = false
-				this.receiveBuffer = ''
+				this.receiveBuffer.clear()
 
 				if (this._pingInterval) {
 					clearInterval(this._pingInterval)
@@ -241,7 +190,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 				this._connected = true
 				this._pingUnackedCount = 0
-				this.receiveBuffer = ''
+				this.receiveBuffer.clear()
 
 				if (!this._pingInterval) {
 					this._pingInterval = setInterval(() => this.sendPing(), PING_INTERVAL)
@@ -335,24 +284,20 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 	private _handleReceivedData(data: string): void {
 		this._lastReceivedAt = Date.now()
-		this.receiveBuffer += data
 
-		let i = -1
-		let offset = 0
-		while ((i = this.receiveBuffer.indexOf('\n', offset)) !== -1) {
-			let line = this.receiveBuffer.substring(offset, i)
-			if (line.endsWith('\r')) line = line.substring(0, line.length - 1)
-
-			offset = i + 1
+		const { lines, overflow } = this.receiveBuffer.push(data)
+		for (const line of lines) {
 			this.handleCommand(line)
 		}
-		this.receiveBuffer = this.receiveBuffer.substring(offset)
+
+		if (overflow) {
+			this.emit('log', 'Received line exceeded maximum length, dropping connection')
+			this.socket?.destroy()
+		}
 	}
 
 	private handleCommand(line: string): void {
-		const i = line.indexOf(' ')
-		const cmd = i === -1 ? line : line.slice(0, i)
-		const body = i === -1 ? '' : line.slice(i + 1)
+		const { command: cmd, body } = splitSatelliteCommand(line)
 		const params = parseLineParameters(body)
 
 		switch (cmd.toUpperCase()) {
@@ -400,13 +345,13 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		}
 	}
 
-	private handleBegin(params: Record<string, string | boolean>): void {
+	private handleBegin(params: ParsedParams): void {
 		this._companionVersion = typeof params.CompanionVersion === 'string' ? params.CompanionVersion : null
 		this._companionApiVersion = typeof params.ApiVersion === 'string' ? params.ApiVersion : null
 
 		// Check if the companion is supported
 		this._companionUnsupported =
-			!this._companionApiVersion || semver.lt(this._companionApiVersion, MINIMUM_PROTOCOL_VERSION)
+			!this._companionApiVersion || !isApiVersionAtLeast(this._companionApiVersion, MINIMUM_PROTOCOL_VERSION)
 		if (this._companionUnsupported) {
 			console.log(
 				`Connected to unsupported Companion version. Companion ${this._companionVersion}, API ${this._companionApiVersion}`,
@@ -418,11 +363,14 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		// Revive for future checks
 		// const protocolVersion = params.ApiVersion
 		// if (typeof protocolVersion === 'string') {
-		// 	if (semver.lte('1.3.0', protocolVersion)) {
+		// 	if (isApiVersionAtLeast(protocolVersion, '1.3.0')) {
 		// 		this._supportsCombinedEncoders = true
 		// 		console.log('Companion supports combined encoders')
 		// 	}
-		if (this._companionApiVersion && semver.lte('1.8.0', this._companionApiVersion)) {
+		if (
+			this._companionApiVersion &&
+			isApiVersionAtLeast(this._companionApiVersion, SATELLITE_FEATURES.lockState.since)
+		) {
 			this._supportsLocalLockState = true
 			console.log('Companion supports delegating locking drawing')
 		}
@@ -434,7 +382,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		})
 	}
 
-	private handleState(params: Record<string, string | boolean>): void {
+	private handleState(params: ParsedParams): void {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Missing DEVICEID in KEY-DRAW response')
 			return
@@ -456,7 +404,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 		this.emit('draw', { deviceId: params.DEVICEID, keyIndex, image, text, color })
 	}
-	private handleClear(params: Record<string, string | boolean>): void {
+	private handleClear(params: ParsedParams): void {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Mising DEVICEID in KEYS-CLEAR response')
 			return
@@ -464,7 +412,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 
 		this.emit('clearDeck', { deviceId: params.DEVICEID })
 	}
-	private handleVariableValue(params: Record<string, string | boolean>) {
+	private handleVariableValue(params: ParsedParams) {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Mising DEVICEID in VARIABLE-VALUE response')
 			return
@@ -485,7 +433,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		})
 	}
 
-	private handleLockedState(params: Record<string, string | boolean>) {
+	private handleLockedState(params: ParsedParams) {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Mising DEVICEID in LOCKED-STATE response')
 			return
@@ -506,7 +454,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		})
 	}
 
-	private handleBrightness(params: Record<string, string | boolean>): void {
+	private handleBrightness(params: ParsedParams): void {
 		if (typeof params.DEVICEID !== 'string') {
 			console.log('Missing DEVICEID in BRIGHTNESS response')
 			return
@@ -523,7 +471,7 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		this.emit('brightness', { deviceId: params.DEVICEID, percent })
 	}
 
-	private handleAddedDevice(params: Record<string, string | boolean>): void {
+	private handleAddedDevice(params: ParsedParams): void {
 		if (!params.OK || params.ERROR) {
 			console.log(`Add device failed: ${JSON.stringify(params)}`)
 			if (typeof params.DEVICEID === 'string') {
@@ -637,25 +585,6 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		deviceId: string | null,
 		args: SatelliteMessageArgs,
 	): void {
-		const chunks: string[] = [messageName]
-		if (status) chunks.push(status)
-		if (deviceId) chunks.push(`DEVICEID="${deviceId}"`)
-
-		for (const [key, value] of Object.entries(args)) {
-			let valueStr: string
-			if (typeof value === 'boolean') {
-				valueStr = value ? '1' : '0'
-			} else if (typeof value === 'number') {
-				valueStr = value.toString()
-			} else {
-				valueStr = `"${value}"`
-			}
-			chunks.push(`${key}=${valueStr}`)
-		}
-
-		chunks.push('\n')
-		this.socket?.write(chunks.join(' '))
+		this.socket?.write(formatSatelliteMessage(messageName, status, deviceId, args))
 	}
 }
-
-type SatelliteMessageArgs = Record<string, string | number | boolean>

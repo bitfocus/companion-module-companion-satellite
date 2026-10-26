@@ -5,6 +5,15 @@ __metadata:
   version: 10
   cacheKey: 10c0
 
+"@companion-app/satellite-protocol@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@companion-app/satellite-protocol@npm:0.1.0"
+  dependencies:
+    zod: "npm:^4.6.5"
+  checksum: 10c0/a4fd6f7af093f631171ebe10dd00d3f9ed0937aa0a336003919b4a43e00194e6eb77951786f108c390c1424bff69177c4acc31618c1facff0aa13c263624150f
+  languageName: node
+  linkType: hard
+
 "@companion-module/base@npm:~1.14.1":
   version: 1.14.1
   resolution: "@companion-module/base@npm:1.14.1"
@@ -271,13 +280,6 @@ __metadata:
   dependencies:
     undici-types: "npm:~6.21.0"
   checksum: 10c0/55d78223205bd5f81f043d71b7a5c8d8854b9ef44ef81291680943adb27fa5ba1f092658c87183d5bc8cf6baf6a57b81dad966eb3afa452cc301a615b6d9b20e
-  languageName: node
-  linkType: hard
-
-"@types/semver@npm:^7.7.1":
-  version: 7.7.1
-  resolution: "@types/semver@npm:7.7.1"
-  checksum: 10c0/c938aef3bf79a73f0f3f6037c16e2e759ff40c54122ddf0b2583703393d8d3127130823facb880e694caa324eb6845628186aac1997ee8b31dc2d18fafe26268
   languageName: node
   linkType: hard
 
@@ -859,17 +861,16 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "companion-satellite@workspace:."
   dependencies:
+    "@companion-app/satellite-protocol": "npm:^0.1.0"
     "@companion-module/base": "npm:~1.14.1"
     "@companion-module/tools": "npm:^2.8.0"
     "@types/node": "npm:^22.20.0"
-    "@types/semver": "npm:^7.7.1"
     "@types/ws": "npm:^8.18.1"
     eslint: "npm:^10.5.0"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^17.0.8"
     prettier: "npm:^3.8.4"
     rimraf: "npm:^6.1.3"
-    semver: "npm:^7.8.5"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.62.0"
     ws: "npm:^8.21.0"
@@ -2126,7 +2127,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semver@npm:^7.5.4, semver@npm:^7.6.3, semver@npm:^7.7.3, semver@npm:^7.7.4, semver@npm:^7.8.5":
+"semver@npm:^7.5.4, semver@npm:^7.6.3, semver@npm:^7.7.3, semver@npm:^7.7.4":
   version: 7.8.5
   resolution: "semver@npm:7.8.5"
   bin:
@@ -2630,6 +2631,13 @@ __metadata:
   version: 1.2.1
   resolution: "yocto-queue@npm:1.2.1"
   checksum: 10c0/5762caa3d0b421f4bdb7a1926b2ae2189fc6e4a14469258f183600028eb16db3e9e0306f46e8ebf5a52ff4b81a881f22637afefbef5399d6ad440824e9b27f9f
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.6.5":
+  version: 4.6.7
+  resolution: "zod@npm:4.6.7"
+  checksum: 10c0/4ce2eb14034317b7254e347ca37b5ad591cf8333147030cf05b9b5d31692d45073f7f2747aa50cf8c6b29012194d2b22978cecc89969cf34a0d18e89d0ee7d7b
   languageName: node
   linkType: hard
 

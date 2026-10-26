@@ -23,14 +23,13 @@
 		"yarn": "^4"
 	},
 	"dependencies": {
+		"@companion-app/satellite-protocol": "^0.1.0",
 		"@companion-module/base": "~1.14.1",
-		"semver": "^7.8.5",
 		"ws": "^8.21.0"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.8.0",
 		"@types/node": "^22.20.0",
-		"@types/semver": "^7.7.1",
 		"@types/ws": "^8.18.1",
 		"eslint": "^10.5.0",
 		"husky": "^9.1.7",
