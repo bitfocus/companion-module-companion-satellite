@@ -1,13 +1,18 @@
 import { CONNECTED_NO_BITMAP_PNG, NOT_CONNECTED_PNG } from './images.js'
-import type { ModuleInstance } from './main.js'
-import { CompanionFeedbackDefinitions } from '@companion-module/base'
+import type { ModuleInstance, ModuleTypes } from './main.js'
+import type { CompanionFeedbackDefinitions } from '@companion-module/base'
+
+export type ButtonImageOptions = {
+	location: string
+}
 
 export function UpdateFeedbacks(instance: ModuleInstance): void {
-	const feedbacks: CompanionFeedbackDefinitions = {
+	const feedbacks: CompanionFeedbackDefinitions<ModuleTypes['feedbacks']> = {
 		buttonImage: {
 			type: 'advanced',
 			name: 'Button Image',
 			description: 'Shows the image from the connected Companion button',
+			affectedProperties: ['png64'],
 			options: [
 				{
 					id: 'location',
@@ -15,12 +20,12 @@ export function UpdateFeedbacks(instance: ModuleInstance): void {
 					label: 'Location (row/column)',
 					default: '0/0',
 					regex: '/^\\d+\\/\\d+$/',
-					useVariables: { local: true },
+					useVariables: true,
 				},
 			],
-			callback: async (feedback, context) => {
-				// Parse the location string (format: row/column) with variable parsing
-				const locationStr = (await context.parseVariablesInString(String(feedback.options.location))).trim()
+			callback: (feedback) => {
+				// Parse the location string (format: row/column), variables have already been parsed by Companion
+				const locationStr = String(feedback.options.location).trim()
 
 				// Check if the string matches the expected format
 				const locationRegex = /^(\d+)\/(\d+)$/

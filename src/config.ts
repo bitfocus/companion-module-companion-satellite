@@ -1,7 +1,7 @@
 import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 import { DEFAULT_TCP_PORT } from './client-types.js'
 
-export interface ModuleConfig {
+export type ModuleConfig = {
 	bonjour: string | null
 	host: string
 	port: number
@@ -53,7 +53,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			label: 'Device ID',
 			width: 12,
 			tooltip: 'A unique identifier for this satellite device. This is a substitute for a serial number.',
-			required: true,
+			minLength: 1,
 		},
 		{
 			type: 'number',

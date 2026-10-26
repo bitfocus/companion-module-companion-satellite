@@ -1,8 +1,12 @@
-import { CompanionPresetDefinitions } from '@companion-module/base'
-import type { ModuleInstance } from './main.js'
+import type { CompanionPresetDefinitions, CompanionPresetGroup, CompanionPresetSection } from '@companion-module/base'
+import type { ModuleInstance, ModuleTypes } from './main.js'
 
-export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions {
-	const presets: CompanionPresetDefinitions = {}
+export function GetPresets(instance: ModuleInstance): {
+	structure: CompanionPresetSection<ModuleTypes>[]
+	presets: CompanionPresetDefinitions<ModuleTypes>
+} {
+	const presets: CompanionPresetDefinitions<ModuleTypes> = {}
+	const rows: CompanionPresetGroup<ModuleTypes>[] = []
 
 	// Use the configured row and column count, or default to 8x4
 	const columnCount = typeof instance.config.columns === 'number' ? instance.config.columns : 8
@@ -10,10 +14,15 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 
 	// Create presets for each row and column using nested loops
 	for (let row = 0; row < rowCount; row++) {
+		const rowPresets: string[] = []
+		rows.push({ id: `row_${row}`, type: 'simple', name: `Row ${row}`, presets: rowPresets })
+
 		for (let column = 0; column < columnCount; column++) {
-			presets[`button_${row}_${column}`] = {
-				type: 'button',
-				category: 'Buttons',
+			const presetId = `button_${row}_${column}`
+			rowPresets.push(presetId)
+
+			presets[presetId] = {
+				type: 'simple',
 				name: `Button ${row}/${column}`,
 				style: {
 					text: ``,
@@ -81,5 +90,8 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 		}
 	}
 
-	return presets
+	return {
+		structure: [{ id: 'buttons', name: 'Buttons', definitions: rows }],
+		presets,
+	}
 }

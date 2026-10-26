@@ -1,8 +1,14 @@
-import type { ModuleInstance } from './main.js'
-import { CompanionActionDefinitions } from '@companion-module/base'
+import type { ModuleInstance, ModuleTypes } from './main.js'
+import type { CompanionActionDefinitions } from '@companion-module/base'
+
+export type KeyEventType = 'press' | 'release' | 'rotate-left' | 'rotate-right'
+export type KeyEventOptions = {
+	location: string
+	eventType: KeyEventType
+}
 
 export function UpdateActions(instance: ModuleInstance): void {
-	const actions: CompanionActionDefinitions = {
+	const actions: CompanionActionDefinitions<ModuleTypes['actions']> = {
 		keyEvent: {
 			name: 'Button Event',
 			options: [
@@ -12,7 +18,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 					label: 'Location (row/column)',
 					default: '0/0',
 					regex: '/^\\d+\\/\\d+$/',
-					useVariables: { local: true },
+					useVariables: true,
 				},
 				{
 					id: 'eventType',
@@ -27,13 +33,13 @@ export function UpdateActions(instance: ModuleInstance): void {
 					],
 				},
 			],
-			callback: async (event, context) => {
+			callback: (event) => {
 				if (!instance.client || !instance.client.connected) {
 					return
 				}
 
-				// Parse the location string (format: row/column) with variable parsing
-				const locationStr = (await context.parseVariablesInString(String(event.options.location))).trim()
+				// Parse the location string (format: row/column), variables have already been parsed by Companion
+				const locationStr = String(event.options.location).trim()
 
 				// Check if the string matches the expected format
 				const locationRegex = /^(\d+)\/(\d+)$/
@@ -46,7 +52,7 @@ export function UpdateActions(instance: ModuleInstance): void {
 
 				const row = Number(match[1])
 				const column = Number(match[2])
-				const eventType = String(event.options.eventType)
+				const eventType = event.options.eventType
 
 				// Validate row and column are within allowed range using the instance properties
 				if (row < 0 || row >= instance.config.rows || column < 0 || column >= instance.config.columns) {

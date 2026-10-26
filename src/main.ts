@@ -1,9 +1,15 @@
-import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import {
+	InstanceBase,
+	InstanceStatus,
+	type CompanionActionSchema,
+	type CompanionAdvancedFeedbackSchema,
+	type InstanceTypes,
+	type SomeCompanionConfigField,
+} from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
-import { UpgradeScripts } from './upgrades.js'
-import { UpdateActions } from './actions.js'
-import { UpdateFeedbacks } from './feedbacks.js'
+import { UpdateActions, type KeyEventOptions } from './actions.js'
+import { UpdateFeedbacks, type ButtonImageOptions } from './feedbacks.js'
 import { CompanionSatelliteClient } from './client.js'
 import { GetPresets } from './presets.js'
 import { DEFAULT_BASE_RESOLUTION, DEFAULT_TCP_PORT } from './client-types.js'
@@ -18,7 +24,26 @@ function validateConfig(config: ModuleConfig): ModuleConfig {
 	}
 }
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
+export { UpgradeScripts } from './upgrades.js'
+
+export interface ModuleTypes extends InstanceTypes {
+	config: ModuleConfig
+	secrets: undefined
+	actions: {
+		keyEvent: CompanionActionSchema<KeyEventOptions, void>
+	}
+	feedbacks: {
+		buttonImage: CompanionAdvancedFeedbackSchema<ButtonImageOptions>
+	}
+	variables: {
+		connection_state: string
+		companion_version: string
+		companion_api_version: string
+		target_address: string
+	}
+}
+
+export class ModuleInstance extends InstanceBase<ModuleTypes> {
 	config!: ModuleConfig // Setup in init()
 	client?: CompanionSatelliteClient
 	readonly buttonImages = new Map<string, string>()
@@ -77,8 +102,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 
 	updatePresets(): void {
-		const presets = GetPresets(this)
-		this.setPresetDefinitions(presets)
+		const { structure, presets } = GetPresets(this)
+		this.setPresetDefinitions(structure, presets)
 	}
 
 	initClient(): void {
@@ -223,4 +248,4 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 }
 
-runEntrypoint(ModuleInstance, UpgradeScripts)
+export default ModuleInstance
