@@ -135,8 +135,6 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 		super()
 
 		this.debug = !!options.debug
-
-		this.initSocket()
 	}
 
 	private initSocket(): void {
