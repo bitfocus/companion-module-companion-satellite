@@ -20,6 +20,7 @@ export function GetPresets(instance: ModuleInstance): CompanionPresetDefinitions
 					size: 'auto',
 					color: combineRgb(255, 255, 255),
 					bgcolor: combineRgb(0, 0, 0),
+					show_topbar: false,
 				},
 				previewStyle: {
 					// Show the coordinates in the preset for the ui
