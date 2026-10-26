@@ -143,11 +143,16 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 			return
 		}
 
+		// A socket which has since been replaced by another must not affect the current connection
+		const isReplaced = () => this.socket !== undefined && this.socket !== socket
+
 		const socketOptions: ICompanionSatelliteClientOptions = {
 			onError: (e) => {
 				this.emit('error', e)
 			},
 			onClose: () => {
+				if (isReplaced()) return
+
 				if (this.debug) {
 					this.emit('log', 'Connection closed')
 				}
@@ -179,8 +184,12 @@ export class CompanionSatelliteClient extends EventEmitter<CompanionSatelliteCli
 					)
 				}
 			},
-			onData: (d) => this._handleReceivedData(d),
+			onData: (d) => {
+				if (!isReplaced()) this._handleReceivedData(d)
+			},
 			onConnect: () => {
+				if (isReplaced()) return
+
 				if (this.debug) {
 					this.emit('log', 'Connected')
 				}
