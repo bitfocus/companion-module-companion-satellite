@@ -118,6 +118,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.client.on('connected', () => {
 			this.updateStatus(InstanceStatus.Ok)
 			this.updateVariables()
+			this.checkFeedbacks('buttonImage')
 
 			// Register our device when connected
 			this.registerSatelliteDevice()
@@ -130,6 +131,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.client.on('disconnected', () => {
 			this.updateStatus(InstanceStatus.Disconnected)
 			this.updateVariables()
+			this.checkFeedbacks('buttonImage')
 		})
 
 		// Handle button events
